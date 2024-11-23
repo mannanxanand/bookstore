@@ -1,5 +1,8 @@
-package com.example.bookstore;
+package com.example.bookstore.views;
 
+import com.example.bookstore.dao.UserDAO;
+import com.example.bookstore.models.User;
+import com.example.bookstore.utils.PasswordUtils;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -11,19 +14,16 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-
 public class LoginView extends Application {
 
     @Override
     public void start(Stage primaryStage) {
         // Create main layout
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: grey;");
+        root.setStyle("-fx-background-color: white;");
 
         // Create header bar
-        HBox header = createHeader();
+        HBox header = createHeader(primaryStage);
         root.setTop(header);
 
         // Create the login form
@@ -37,35 +37,34 @@ public class LoginView extends Application {
         primaryStage.show();
     }
 
-    private HBox createHeader() {
+    private HBox createHeader(Stage primaryStage) {
         HBox header = new HBox();
-        header.setStyle("-fx-background-color: grey;");
+        header.setStyle("-fx-background-color: #d3d3d3;");
         header.setPadding(new Insets(10));
         header.setSpacing(20);
 
-        // Role text
-        Label roleLabel = new Label("Guest");
-        roleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 18));
-        roleLabel.setTextFill(Color.BLACK);
-        roleLabel.setStyle("-fx-background-color: yellow;");
-        roleLabel.setPrefSize(150, 40);
-        roleLabel.setAlignment(Pos.CENTER);
+        // View dropdown
+        MenuButton viewMenu = new MenuButton("Guest View \u25BE");
+        viewMenu.setStyle("-fx-background-color: yellow;");
 
         // Title in the middle
         Label titleLabel = new Label("ASU SUN DEVIL BOOKSTORE");
         titleLabel.setTextFill(Color.MAROON);
-        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 30));
+        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 20));
 
-        // Adjust spacing for title
-        HBox.setHgrow(titleLabel, Priority.ALWAYS);
+        // Login button (disabled because we're on the login page)
+        Button loginBtn = new Button("Login");
+        loginBtn.setStyle("-fx-background-color: yellow;");
+        loginBtn.setDisable(true);
 
-        // Spacers to adjust title position
+        // Spacers to push title to center
         Region leftSpacer = new Region();
         HBox.setHgrow(leftSpacer, Priority.ALWAYS);
         Region rightSpacer = new Region();
         HBox.setHgrow(rightSpacer, Priority.ALWAYS);
 
-        header.getChildren().addAll(roleLabel, leftSpacer, titleLabel, rightSpacer);
+        header.getChildren().addAll(viewMenu, leftSpacer, titleLabel,
+                rightSpacer, loginBtn);
         header.setAlignment(Pos.CENTER_LEFT);
 
         return header;
@@ -113,16 +112,37 @@ public class LoginView extends Application {
         loginBtn.setFont(Font.font("Arial", FontWeight.BOLD, 18));
         loginBtn.setStyle("-fx-background-color: yellow; -fx-text-fill: maroon;");
         loginBtn.setPrefSize(120, 40);
-
         loginBtn.setOnAction(event -> {
-            String username = userTxt.getText();
+            String username = userTxt.getText().trim();
             String password = passTxt.getText();
-            if (isValidCredentials(username, password)) {
+
+            // Input validation
+            if (username.isEmpty() || password.isEmpty()) {
+                showAlert("Error", "Please enter both username and password.");
+                return;
+            }
+
+            UserDAO userDAO = new UserDAO();
+            User user = userDAO.getUser(username);
+
+            if (user == null) {
+                showAlert("Invalid Login", "The username or password is incorrect.");
+                return;
+            }
+
+            // Hash the entered password
+            String hashedPassword = PasswordUtils.hashPassword(password);
+
+            // Compare hashed passwords
+            if (hashedPassword.equals(user.getHashedPassword())) {
+                showAlert("Login Successful", "Welcome, " + user.getUsername() + "!");
+                // Redirect to BuyerView regardless of role
                 try {
-                    new SellerViewApp().start(new Stage());
+                    new BuyerView(user).start(primaryStage);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+                // Close current login window
                 ((Stage) loginBtn.getScene().getWindow()).close();
             } else {
                 showAlert("Invalid Login", "The username or password is incorrect.");
@@ -132,7 +152,9 @@ public class LoginView extends Application {
         // Forgot Password link
         Hyperlink forgotPasswordLink = new Hyperlink("Forgot Password?");
         forgotPasswordLink.setFont(Font.font("Arial", FontWeight.NORMAL, 16));
-        forgotPasswordLink.setOnAction(event -> showAlert("Forgot Password", "Please contact support to reset your password."));
+        forgotPasswordLink.setOnAction(event ->
+                showAlert("Forgot Password",
+                        "Please contact support to reset your password."));
 
         // Sign Up link
         Hyperlink signUpLink = new Hyperlink("Don't have an account? Sign Up");
@@ -145,7 +167,8 @@ public class LoginView extends Application {
             }
         });
 
-        loginBox.getChildren().addAll(signInLbl, textFieldsBox, keepSignedInChk, loginBtn, forgotPasswordLink, signUpLink);
+        loginBox.getChildren().addAll(signInLbl, textFieldsBox, keepSignedInChk,
+                loginBtn, forgotPasswordLink, signUpLink);
         VBox loginBoxWrapper = new VBox(loginBox);
         loginBoxWrapper.setAlignment(Pos.CENTER);
         loginBoxWrapper.setStyle("-fx-background-color: white;");
@@ -154,25 +177,9 @@ public class LoginView extends Application {
         return loginBoxWrapper;
     }
 
-    private boolean isValidCredentials(String username, String password) {
-        User user = UserStorage.getUser(username);
-        return user != null && user.getHashedPassword().equals(hashPassword(password));
-    }
-
-    private String hashPassword(String password) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] hash = md.digest(password.getBytes());
-            StringBuilder sb = new StringBuilder();
-            for (byte b : hash) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
+    /**
+     * Displays an alert dialog with the given title and message.
+     */
     private void showAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
@@ -181,6 +188,9 @@ public class LoginView extends Application {
         alert.showAndWait();
     }
 
+    /**
+     * Main method to launch the Login view.
+     */
     public static void main(String[] args) {
         launch(args);
     }

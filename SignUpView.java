@@ -1,5 +1,8 @@
-package com.example.bookstore;
+package com.example.bookstore.views;
 
+import com.example.bookstore.dao.UserDAO;
+import com.example.bookstore.models.User;
+import com.example.bookstore.utils.PasswordUtils;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -11,19 +14,16 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-
 public class SignUpView extends Application {
 
     @Override
     public void start(Stage primaryStage) {
         // Create main layout
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: grey;");
+        root.setStyle("-fx-background-color: white;");
 
         // Create header bar
-        HBox header = createHeader();
+        HBox header = createHeader(primaryStage);
         root.setTop(header);
 
         // Create the sign-up form
@@ -37,35 +37,40 @@ public class SignUpView extends Application {
         primaryStage.show();
     }
 
-    private HBox createHeader() {
+    private HBox createHeader(Stage primaryStage) {
         HBox header = new HBox();
-        header.setStyle("-fx-background-color: grey;");
+        header.setStyle("-fx-background-color: #d3d3d3;");
         header.setPadding(new Insets(10));
         header.setSpacing(20);
 
-        // Role text
-        Label roleLabel = new Label("Guest");
-        roleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 18));
-        roleLabel.setTextFill(Color.BLACK);
-        roleLabel.setStyle("-fx-background-color: yellow;");
-        roleLabel.setPrefSize(150, 40);
-        roleLabel.setAlignment(Pos.CENTER);
+        // View dropdown
+        MenuButton viewMenu = new MenuButton("Guest View \u25BE");
+        viewMenu.setStyle("-fx-background-color: yellow;");
+        // No other views for guest
 
         // Title in the middle
         Label titleLabel = new Label("ASU SUN DEVIL BOOKSTORE");
         titleLabel.setTextFill(Color.MAROON);
-        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 30));
+        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 20));
 
-        // Adjust spacing for title
-        HBox.setHgrow(titleLabel, Priority.ALWAYS);
+        // Login button
+        Button loginBtn = new Button("Login");
+        loginBtn.setStyle("-fx-background-color: yellow;");
+        loginBtn.setOnAction(e -> {
+            try {
+                new LoginView().start(primaryStage);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
 
-        // Spacers to adjust title position
+        // Spacers to push title to center
         Region leftSpacer = new Region();
         HBox.setHgrow(leftSpacer, Priority.ALWAYS);
         Region rightSpacer = new Region();
         HBox.setHgrow(rightSpacer, Priority.ALWAYS);
 
-        header.getChildren().addAll(roleLabel, leftSpacer, titleLabel, rightSpacer);
+        header.getChildren().addAll(viewMenu, leftSpacer, titleLabel, rightSpacer, loginBtn);
         header.setAlignment(Pos.CENTER_LEFT);
 
         return header;
@@ -121,28 +126,48 @@ public class SignUpView extends Application {
         signUpBtn.setStyle("-fx-background-color: yellow; -fx-text-fill: maroon;");
         signUpBtn.setPrefSize(120, 40);
         signUpBtn.setOnAction(event -> {
-            String username = userTxt.getText();
+            String username = userTxt.getText().trim();
             String password = passTxt.getText();
             String reEnterPassword = reEnterPassTxt.getText();
-            if (password.equals(reEnterPassword) && !username.isEmpty() && !password.isEmpty()) {
-                if (UserStorage.usernameExists(username)) {
-                    showAlert("Error", "Username already exists.");
-                } else {
-                    String hashedPassword = hashPassword(password);
-                    User newUser = new User(username, hashedPassword);
-                    if (signUpAsSellerChk.isSelected()) {
-                        newUser.setRole("Seller");
-                    } else {
-                        newUser.setRole("User");
-                    }
-                    UserStorage.addUser(newUser);
-                    showAlert("Sign Up Successful", "Welcome, " + username + "!");
-                    new LoginView().start(primaryStage); // Redirect back to login
-                }
-            } else if (!password.equals(reEnterPassword)) {
-                showAlert("Error", "Passwords do not match.");
-            } else {
+
+            // Input validation
+            if (username.isEmpty() || password.isEmpty() || reEnterPassword.isEmpty()) {
                 showAlert("Error", "All fields are required.");
+                return;
+            }
+
+            if (!password.equals(reEnterPassword)) {
+                showAlert("Error", "Passwords do not match.");
+                return;
+            }
+
+            UserDAO userDAO = new UserDAO();
+
+            // Check if username already exists
+            if (userDAO.usernameExists(username)) {
+                showAlert("Error", "Username already exists.");
+                return;
+            }
+
+            // Hash the password
+            String hashedPassword = PasswordUtils.hashPassword(password);
+            System.out.println("Hashed password during sign-up: " + hashedPassword);
+
+            // Determine user role
+            String role = signUpAsSellerChk.isSelected() ? "Seller" : "Buyer";
+
+            // Create new user and add to database
+            User newUser = new User(username, hashedPassword, role);
+            userDAO.addUser(newUser);
+
+            // Automatically log in the user and redirect to BuyerView
+            showAlert("Sign Up Successful", "Welcome, " + username + "!");
+
+            try {
+                newUser = userDAO.getUser(username); // Get the user with ID
+                new BuyerView(newUser).start(primaryStage);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         });
 
@@ -155,20 +180,12 @@ public class SignUpView extends Application {
         return signUpBoxWrapper;
     }
 
-    private String hashPassword(String password) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] hash = md.digest(password.getBytes());
-            StringBuilder sb = new StringBuilder();
-            for (byte b : hash) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
+    /**
+     * Displays an alert dialog with the given title and message.
+     *
+     * @param title   The title of the alert.
+     * @param message The content message of the alert.
+     */
     private void showAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
@@ -177,6 +194,11 @@ public class SignUpView extends Application {
         alert.showAndWait();
     }
 
+    /**
+     * Main method to launch the Sign-Up view.
+     *
+     * @param args Command-line arguments.
+     */
     public static void main(String[] args) {
         launch(args);
     }
