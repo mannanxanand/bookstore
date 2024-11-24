@@ -163,11 +163,13 @@ CREATE TABLE books (
 
 ## Payment Integration
 
-This project uses the Stripe API for payment processing. To enable payments:
+This project **intends to use** the Stripe API for payment processing. To enable payments:
 
 1. **Create a Stripe Account:** [Stripe Signup](https://stripe.com)
 2. **Obtain API Keys:** From the Stripe dashboard.
 3. **Integrate with Application:** Update the `StripePayment.java` class with your API keys.
+
+*Currently under development.
 
 ## Contributing
 
