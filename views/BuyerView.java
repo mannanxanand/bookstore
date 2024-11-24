@@ -12,6 +12,8 @@ import javafx.geometry.Pos;
 import javafx.geometry.Side;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.MenuButton;
+import javafx.scene.control.MenuItem;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
@@ -66,7 +68,9 @@ public class BuyerView extends Application {
         header.setSpacing(20);
 
         // View dropdown
-        MenuButton viewMenu = new MenuButton("Buyer View \u25BE"); // Down arrow
+        String currentView = "Buyer View";
+
+        MenuButton viewMenu = new MenuButton(currentView + " \u25BE"); // Down arrow
         viewMenu.setStyle("-fx-background-color: yellow;");
 
         MenuItem buyerViewItem = new MenuItem("Buyer View");
@@ -100,7 +104,9 @@ public class BuyerView extends Application {
         cartImageView.setFitHeight(30);
 
         cartCountLabel = new Label(String.valueOf(Cart.getInstance().getItemCount()));
-        cartCountLabel.setStyle("-fx-background-color: red; -fx-text-fill: white; -fx-font-size: 12;");
+        cartCountLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+
+        cartCountLabel.setTextFill(Color.MAROON);
         cartCountLabel.setVisible(Cart.getInstance().getItemCount() > 0);
 
         cartIcon.getChildren().addAll(cartImageView, cartCountLabel);
@@ -272,9 +278,11 @@ public class BuyerView extends Application {
         Label conditionLabel = new Label("By Condition:");
         conditionLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
 
-        CheckMenuItem likeNewCheck = new CheckMenuItem("Used (Like New)");
-        CheckMenuItem moderateCheck = new CheckMenuItem("Moderate");
-        CheckMenuItem heavilyUsedCheck = new CheckMenuItem("Heavily Used");
+        CheckBox likeNewCheck = new CheckBox("Used (Like New)");
+
+        CheckBox moderateCheck = new CheckBox("Moderate");
+
+        CheckBox heavilyUsedCheck = new CheckBox("Heavily Used");
 
         likeNewCheck.setSelected(selectedConditions.contains("Used (Like New)"));
         moderateCheck.setSelected(selectedConditions.contains("Moderate"));
@@ -285,9 +293,9 @@ public class BuyerView extends Application {
         priceLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
 
         ToggleGroup priceGroup = new ToggleGroup();
-        RadioMenuItem under25 = new RadioMenuItem("Under $25");
-        RadioMenuItem under50 = new RadioMenuItem("Under $50");
-        RadioMenuItem under100 = new RadioMenuItem("Under $100");
+        RadioButton under25 = new RadioButton("Under $25");
+        RadioButton under50 = new RadioButton("Under $50");
+        RadioButton under100 = new RadioButton("Under $100");
 
         under25.setToggleGroup(priceGroup);
         under50.setToggleGroup(priceGroup);
@@ -301,24 +309,13 @@ public class BuyerView extends Application {
             under100.setSelected(true);
         }
 
-        // Add items to filterMenu
-        filterMenu.getItems().addAll(
-                new CustomMenuItem(conditionLabel, false),
-                likeNewCheck,
-                moderateCheck,
-                heavilyUsedCheck,
-                new SeparatorMenuItem(),
-                new CustomMenuItem(priceLabel, false),
-                under25,
-                under50,
-                under100
-        );
+        // Apply Filters button
 
-        // Show the context menu below the Filter button
-        filterMenu.show(filterButton, Side.BOTTOM, 0, 0);
+        Button applyFiltersBtn = new Button("Apply Filters");
 
-        // Apply filters when menu is hidden
-        filterMenu.setOnHidden(e -> {
+        applyFiltersBtn.setOnAction(e -> {
+
+            // Update selected conditions
             selectedConditions.clear();
             if (likeNewCheck.isSelected()) selectedConditions.add("Used (Like New)");
             if (moderateCheck.isSelected()) selectedConditions.add("Moderate");
@@ -332,38 +329,56 @@ public class BuyerView extends Application {
 
             // Apply filters
             applyFilters(null);
+
+            // Close the menu
+            filterMenu.hide();
         });
+         VBox menuContent = new VBox(5,
+
+                new Separator(),
+                conditionLabel,
+                likeNewCheck,
+                moderateCheck,
+                heavilyUsedCheck,
+                new Separator(),
+                priceLabel,
+                under25,
+                under50,
+                under100,
+                new Separator(),
+                applyFiltersBtn
+
+        );
+
+        menuContent.setPadding(new Insets(10));
+        CustomMenuItem customItem = new CustomMenuItem(menuContent);
+        customItem.setHideOnClick(false);
+
+        filterMenu.getItems().add(customItem);
+
+        // Show the context menu below the Filter button
+        filterMenu.show(filterButton, Side.BOTTOM, 0, 0);
     }
 
     private void showCategoryOptions(Button categoryButton) {
         // Create a context menu for categories
         ContextMenu categoryMenu = new ContextMenu();
-
-        CheckMenuItem naturalScienceCheck = new CheckMenuItem("Natural Science");
-        CheckMenuItem computerCheck = new CheckMenuItem("Computer");
-        CheckMenuItem mathsCheck = new CheckMenuItem("Maths");
-        CheckMenuItem englishLangCheck = new CheckMenuItem("English Lang.");
-        CheckMenuItem otherCheck = new CheckMenuItem("Other");
-
+        CheckBox naturalScienceCheck = new CheckBox("Natural Science");
+        CheckBox computerCheck = new CheckBox("Computer");
+        CheckBox mathsCheck = new CheckBox("Maths");
+        CheckBox englishLangCheck = new CheckBox("English Lang.");
+        CheckBox otherCheck = new CheckBox("Other");
         naturalScienceCheck.setSelected(selectedCategories.contains("Natural Science"));
         computerCheck.setSelected(selectedCategories.contains("Computer"));
         mathsCheck.setSelected(selectedCategories.contains("Maths"));
         englishLangCheck.setSelected(selectedCategories.contains("English Lang."));
         otherCheck.setSelected(selectedCategories.contains("Other"));
 
-        categoryMenu.getItems().addAll(
-                naturalScienceCheck,
-                computerCheck,
-                mathsCheck,
-                englishLangCheck,
-                otherCheck
-        );
+        // Apply Categories button
 
-        // Show the context menu below the Category button
-        categoryMenu.show(categoryButton, Side.BOTTOM, 0, 0);
+        Button applyCategoriesBtn = new Button("Apply Categories");
 
-        // Apply filters when menu is hidden
-        categoryMenu.setOnHidden(e -> {
+        applyCategoriesBtn.setOnAction(e -> {
             selectedCategories.clear();
             if (naturalScienceCheck.isSelected()) selectedCategories.add("Natural Science");
             if (computerCheck.isSelected()) selectedCategories.add("Computer");
@@ -373,7 +388,31 @@ public class BuyerView extends Application {
 
             // Apply filters
             applyFilters(null);
+            // Close the menu
+            categoryMenu.hide();
         });
+
+        VBox menuContent = new VBox(5,
+
+                naturalScienceCheck,
+                computerCheck,
+                mathsCheck,
+                englishLangCheck,
+                otherCheck,
+                new Separator(),
+                applyCategoriesBtn
+
+        );
+
+        menuContent.setPadding(new Insets(10));
+
+
+        CustomMenuItem customItem = new CustomMenuItem(menuContent);
+        customItem.setHideOnClick(false);
+        categoryMenu.getItems().add(customItem);
+
+        // Show the context menu below the Category button
+        categoryMenu.show(categoryButton, Side.BOTTOM, 0, 0);
     }
 
     private void applyFilters(String searchText) {
