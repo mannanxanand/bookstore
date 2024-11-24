@@ -26,7 +26,7 @@ Welcome to the **ASU Sun Devil Bookstore** project! Developed as part of the CSE
 - **Browse Books:** Explore a wide range of books across various categories.
 - **Search & Filter:** Utilize multi-select filters for conditions, price ranges, and categories to find exactly what you're looking for.
 - **Shopping Cart:** Add books to your cart, view cart contents, and proceed to checkout.
-- **Checkout Process:** Secure payment integration with Stripe, including shipping address and detailed payment options.
+- **(PENDING) Checkout Process:** Secure payment integration with Stripe, including shipping address and detailed payment options.
 
 ### **For Sellers:**
 - **List Books:** Easily list your books with details like title, author, category, condition, and price.
@@ -43,7 +43,7 @@ Welcome to the **ASU Sun Devil Bookstore** project! Developed as part of the CSE
 - **JavaFX:** For building the graphical user interface.
 - **Java:** The core programming language.
 - **MySQL:** Database management system for storing user and book data.
-- **Stripe API:** For handling secure payment transactions.
+- **(Under the Works) Stripe API:** For handling secure payment transactions.
 - **Maven:** Project management and build automation tool.
 
 ## Getting Started
